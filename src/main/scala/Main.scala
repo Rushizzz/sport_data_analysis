@@ -304,9 +304,32 @@ object Main {
     writeOutput(filteredCountiresNoGold, "18")
 
     //    19.	In which Sport/event, India has won highest medals.
-    //
-    //    20.	Break down all olympic games where india won medal for Hockey and how many medals in each olympic games.
+    val mostWonIndia = DF1.filter(
+      col("Medal").isin("Gold","Silver","Bronze"))
+      .groupBy("NOC", "Games")
+      .agg(count("Medal").alias("Medal_Count"))
+      .filter(
+        col("NOC") === "IND"
+      )
+      .orderBy(col("Medal_Count").desc)
+      .limit(1)
 
+    mostWonIndia.show()
+    writeOutput(mostWonIndia, "19")
+    //    20.	Break down all olympic games where india won medal for Hockey and how many medals in each olympic games.
+    val wonHockeyIndia = DF1.filter(
+      col("Medal").isin("Gold","Silver","Bronze")
+    )
+      .groupBy("NOC","Games","Sport")
+      .agg(count("Medal").alias("Medal_Count"))
+      .filter(
+        col("NOC") === "IND" &&
+        col("Sport").contains("Hockey") &&
+        col("Medal_Count") > 0
+      )
+
+    wonHockeyIndia.orderBy(col("Medal_Count").desc).show()
+    writeOutput(wonHockeyIndia, "20")
   }
 
 
