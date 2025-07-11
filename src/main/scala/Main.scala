@@ -183,19 +183,106 @@ object Main {
 
     mostMedalCountries.show()
     writeOutput(mostMedalCountries, "13")
+
+    //    14.	List down total gold, silver and bronze medals won by each country.
+    val countryMedals = DF1.filter(col("Medal").isin("Gold", "Silver", "Bronze"))
+      .groupBy("NOC")
+      .agg(
+        sum(when(col("Medal") === "Gold", 1).otherwise(0)).as("Gold_Count"),
+        sum(when(col("Medal") === "Silver", 1).otherwise(0)).as("Silver_Count"),
+        sum(when(col("Medal") === "Bronze", 1).otherwise(0)).as("Bronze_Count"),
+      )
+
+    countryMedals.show()
+    writeOutput(countryMedals, "14")
+
+    //    15.	List down total gold, silver and bronze medals won by each country corresponding to each olympic games.
+    val countryMedalsByGame = DF1.filter(col("Medal").isin("Gold", "Silver", "Bronze"))
+      .groupBy("NOC", "Year")
+      .agg(
+        sum(when(col("Medal") === "Gold", 1).otherwise(0)).as("Gold_Count"),
+        sum(when(col("Medal") === "Silver", 1).otherwise(0)).as("Silver_Count"),
+        sum(when(col("Medal") === "Bronze", 1).otherwise(0)).as("Bronze_Count"),
+      )
+
+    countryMedalsByGame.show()
+    writeOutput(countryMedalsByGame, "15")
+
+    //    16.	Identify which country won the most gold, most silver and most bronze medals in each olympic games.
+    val countryMedalsByGameMost = DF1.filter(col("Medal").isin("Gold", "Silver", "Bronze"))
+      .groupBy("NOC", "Year")
+      .agg(
+        sum(when(col("Medal") === "Gold", 1).otherwise(0)).as("Gold_Count"),
+        sum(when(col("Medal") === "Silver", 1).otherwise(0)).as("Silver_Count"),
+        sum(when(col("Medal") === "Bronze", 1).otherwise(0)).as("Bronze_Count"),
+      )
+
+    countryMedalsByGameMost.orderBy("NOC").show()
+    val filteredCountry = countryMedalsByGameMost.select(
+      max("Gold_Count").alias("Gold_Count"),
+      max("Silver_Count").alias("Silver_Count"),
+      max("Bronze_Count").alias("Bronze_Count")
+    )
+
+    filteredCountry.show()
+
+    val maxGoldCount = filteredCountry.select(col("Gold_Count")).first().get(0)
+    val maxSilverCount = filteredCountry.select(col("Silver_Count")).first().get(0)
+    val maxBronzeCount = filteredCountry.select(col("Bronze_Count")).first().get(0)
+
+    println(maxGoldCount, maxSilverCount, maxBronzeCount )
+    val mostWonGoldCountries = countryMedalsByGameMost.filter(
+      col("Gold_Count") === maxGoldCount
+    )
+    mostWonGoldCountries.show()
+    val mostWonSilverCountries = countryMedalsByGameMost.filter(
+      col("Silver_Count") === maxSilverCount
+    )
+    mostWonSilverCountries.show()
+    val mostWonBronzeCountries = countryMedalsByGameMost.filter(
+      col("Bronze_Count") === maxBronzeCount
+    )
+    mostWonBronzeCountries.show()
+    val allMostWonCountries = mostWonGoldCountries.union(mostWonSilverCountries).union(mostWonBronzeCountries)
+
+    allMostWonCountries.show()
+    writeOutput(allMostWonCountries, "16")
+
   }
 
   def questionsSolving(DF1: DataFrame, DF2: DataFrame, spark: SparkSession): Unit = {
+    spark.sparkContext.setLogLevel("ERROR")
     import spark.implicits._
 
-    //    14.	List down total gold, silver and bronze medals won by each country.
-
-    //    15.	List down total gold, silver and bronze medals won by each country corresponding to each olympic games.
-    //
-    //    16.	Identify which country won the most gold, most silver and most bronze medals in each olympic games.
-    //
     //    17.	Identify which country won the most gold, most silver, most bronze medals and the most medals in each olympic games.
-    //
+    DF1.show(5)
+    val countryMedalsByGameMostByGame = DF1.filter(col("Medal").isin("Gold", "Silver", "Bronze"))
+      .groupBy("Games", "NOC")
+      .agg(
+        sum(when(col("Medal") === "Gold", 1).otherwise(0)).as("Gold_Count"),
+        sum(when(col("Medal") === "Silver", 1).otherwise(0)).as("Silver_Count"),
+        sum(when(col("Medal") === "Bronze", 1).otherwise(0)).as("Bronze_Count"),
+      )
+
+    countryMedalsByGameMostByGame.orderBy(col("Gold_Count").desc).show()
+
+    val maxValues = countryMedalsByGameMostByGame.select(
+      max("Gold_Count").alias("Gold_Max_Value"),
+      max("Silver_Count").alias("Silver_Max_Value"),
+      max("Bronze_Count").alias("Bronze_Max_Value"),
+    )
+
+    val goldMax = maxValues.select("Gold_Max_Value").first().get(0)
+    val silverMax = maxValues.select("Silver_Max_Value").first().get(0)
+    val bronzeMax = maxValues.select("Bronze_Max_Value").first().get(0)
+
+    val filteredCountryMedalsByGame = countryMedalsByGameMostByGame.filter(
+        col("Gold_Count") === goldMax ||
+        col("Silver_Count") === silverMax ||
+        col("Bronze_Count") === bronzeMax
+    )
+
+    filteredCountryMedalsByGame.show()
     //    18.	Which countries have never won gold medal but have won silver/bronze medals?
     //
     //    19.	In which Sport/event, India has won highest medals.
