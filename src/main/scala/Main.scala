@@ -283,8 +283,26 @@ object Main {
     )
 
     filteredCountryMedalsByGame.show()
+    writeOutput(filteredCountryMedalsByGame, "17")
+
     //    18.	Which countries have never won gold medal but have won silver/bronze medals?
-    //
+    val countriesWithMedals = DF1.filter(col("Medal").isin("Gold", "Silver", "Bronze"))
+      .groupBy("NOC")
+      .agg(
+        sum(when(col("Medal") === "Gold", 1).otherwise(0)).as("Gold_Count"),
+        sum(when(col("Medal") === "Silver", 1).otherwise(0)).as("Silver_Count"),
+        sum(when(col("Medal") === "Bronze", 1).otherwise(0)).as("Bronze_Count"),
+      )
+
+    val filteredCountiresNoGold = countriesWithMedals.filter(
+        col("Gold_Count") === 0 &&
+        col("Silver_Count") > 0 &&
+        col("Bronze_Count") > 0
+    )
+
+    filteredCountiresNoGold.show()
+    writeOutput(filteredCountiresNoGold, "18")
+
     //    19.	In which Sport/event, India has won highest medals.
     //
     //    20.	Break down all olympic games where india won medal for Hockey and how many medals in each olympic games.
